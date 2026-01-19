@@ -4,56 +4,67 @@ import com.example.vacationPayCalculator.dto.CalculationType;
 import com.example.vacationPayCalculator.dto.VacationCalculationRequest;
 import com.example.vacationPayCalculator.dto.VacationCalculationResponse;
 import com.example.vacationPayCalculator.validation.VacationCalculatorValidator;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.Year;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
 
 @Service
+@RequiredArgsConstructor
 public class VacationCalculatorService {
-    private static final int daysInCurrentYear = LocalDate.now().isLeapYear() ? 366 : 365;;
-    public VacationCalculationResponse calculate(VacationCalculationRequest vacationCalculationRequest) {
-        VacationCalculatorValidator.isValidData(vacationCalculationRequest);
+
+    private final VacationCalculatorValidator validator;
+
+    public VacationCalculationResponse calculate(VacationCalculationRequest request) {
+        validator.isValidData(request);
         VacationCalculationResponse response = new VacationCalculationResponse();
-        if (VacationCalculatorValidator.shouldCalculateByDates(vacationCalculationRequest)) {
-            response.setAmount(calculateByDates(calculateAverageSalaryPerDay(vacationCalculationRequest),
-                    vacationCalculationRequest));
+        if (validator.shouldCalculateByDates(request)) {
+            response.setAmount(calculateByDates(calculateAverageSalaryPerDay(request),
+                    request));
             response.setCalculationType(CalculationType.BY_DATES);
         }
-        if (VacationCalculatorValidator.shouldCalculateByDaysOnly(vacationCalculationRequest)) {
-            response.setAmount(calculateByDays(calculateAverageSalaryPerDay(vacationCalculationRequest),
-                    vacationCalculationRequest));
+        if (validator.shouldCalculateByDaysOnly(request)) {
+            response.setAmount(calculateByDays(calculateAverageSalaryPerDay(request),
+                    request));
             response.setCalculationType(CalculationType.BY_DAYS);
         }
         response.setCurrency("RUB");
         return response;
     }
 
-    private BigDecimal calculateAverageSalaryPerDay(VacationCalculationRequest vacationCalculationRequest) {
-        return BigDecimal.valueOf(vacationCalculationRequest.getAverageSalaryPerYear())
-                .divide(BigDecimal.valueOf(daysInCurrentYear), 10, RoundingMode.HALF_UP);
+    private BigDecimal calculateAverageSalaryPerDay(VacationCalculationRequest request) {
+        int year;
+        if (request.getStartVacation() != null) {
+            year = request.getStartVacation().getYear();
+        } else {
+            year = LocalDate.now().getYear();
+        }
+        return BigDecimal.valueOf(request.getAverageSalaryPerYear())
+                .divide(BigDecimal.valueOf(getDaysInYear(year)), 10, RoundingMode.HALF_UP);
     }
 
-    private BigDecimal calculateByDays(BigDecimal averageSalaryPerDay, VacationCalculationRequest vacationCalculationRequest) {
+    private BigDecimal calculateByDays(BigDecimal averageSalaryPerDay, VacationCalculationRequest request) {
         return averageSalaryPerDay
-                .multiply(BigDecimal.valueOf(vacationCalculationRequest.getVacationDaysCount()))
+                .multiply(BigDecimal.valueOf(request.getVacationDaysCount()))
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
-    private BigDecimal calculateByDates(BigDecimal averageSalaryPerDay, VacationCalculationRequest vacationCalculationRequest) {
+    private BigDecimal calculateByDates(BigDecimal averageSalaryPerDay, VacationCalculationRequest request) {
         return averageSalaryPerDay
                 .multiply(
                         BigDecimal.valueOf(
                                 calculateEffectiveVacationDays(
-                                        vacationCalculationRequest.getStartVacation(),
-                                        vacationCalculationRequest.getFinishVacation(),
-                                        getHolidays(vacationCalculationRequest.getStartVacation().getYear())
+                                        request.getStartVacation(),
+                                        request.getFinishVacation(),
+                                        getHolidays(request.getStartVacation().getYear())
                                 )
                         )
                 ).setScale(2, RoundingMode.HALF_UP);
@@ -97,6 +108,10 @@ public class VacationCalculatorService {
         holidays.add(LocalDate.of(year, 6, 12));
         holidays.add(LocalDate.of(year, 11, 4));
         return holidays;
+    }
+
+    private int getDaysInYear(int year) {
+        return Year.of(year).isLeap() ? 366 : 365;
     }
 
 

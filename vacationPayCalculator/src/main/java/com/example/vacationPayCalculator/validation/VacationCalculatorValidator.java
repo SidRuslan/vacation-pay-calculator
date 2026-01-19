@@ -2,11 +2,13 @@ package com.example.vacationPayCalculator.validation;
 
 import com.example.vacationPayCalculator.dto.VacationCalculationRequest;
 import com.example.vacationPayCalculator.exception.InvalidRequestException;
+import org.springframework.stereotype.Component;
 
 
+@Component
 public class VacationCalculatorValidator {
 
-    public static boolean isValidData(VacationCalculationRequest vacationCalculationRequest) {
+    public boolean isValidData(VacationCalculationRequest vacationCalculationRequest) {
         if (!hasValidSalary(vacationCalculationRequest)) {
             throw new InvalidRequestException("Average Salary must be positive!");
         }
@@ -23,34 +25,34 @@ public class VacationCalculatorValidator {
         }
         return true;
     }
-    public static boolean shouldCalculateByDaysOnly(VacationCalculationRequest vacationCalculationRequest) {
+    public boolean shouldCalculateByDaysOnly(VacationCalculationRequest vacationCalculationRequest) {
         return hasValidSalary(vacationCalculationRequest)
                 && hasValidVacationDaysCount(vacationCalculationRequest)
                 && !hasValidVacationDates(vacationCalculationRequest);
     }
 
-    public static boolean shouldCalculateByDates(VacationCalculationRequest vacationCalculationRequest) {
+    public boolean shouldCalculateByDates(VacationCalculationRequest vacationCalculationRequest) {
         return hasValidSalary(vacationCalculationRequest)
                 && hasValidVacationDates(vacationCalculationRequest)
                 && hasValidDatesRange(vacationCalculationRequest);
     }
 
-    public static boolean hasValidSalary(VacationCalculationRequest vacationCalculationRequest) {
+    public boolean hasValidSalary(VacationCalculationRequest vacationCalculationRequest) {
         return vacationCalculationRequest.getAverageSalaryPerYear() != null
                 && vacationCalculationRequest.getAverageSalaryPerYear() > 0.0;
     }
 
-    public static boolean hasValidVacationDates(VacationCalculationRequest vacationCalculationRequest) {
+    public boolean hasValidVacationDates(VacationCalculationRequest vacationCalculationRequest) {
         return vacationCalculationRequest.getStartVacation() != null
                 && vacationCalculationRequest.getFinishVacation() != null;
     }
 
-    public static boolean hasValidVacationDaysCount(VacationCalculationRequest vacationCalculationRequest) {
+    public boolean hasValidVacationDaysCount(VacationCalculationRequest vacationCalculationRequest) {
         return vacationCalculationRequest.getVacationDaysCount() != null
                 && vacationCalculationRequest.getVacationDaysCount() > 0;
     }
 
-    private static boolean hasValidDatesRange(VacationCalculationRequest vacationCalculationRequest) {
+    private boolean hasValidDatesRange(VacationCalculationRequest vacationCalculationRequest) {
         return vacationCalculationRequest.getStartVacation()
                 .isBefore(vacationCalculationRequest.getFinishVacation());
     }
